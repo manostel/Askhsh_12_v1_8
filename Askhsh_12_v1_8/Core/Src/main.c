@@ -33,6 +33,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+char uartBuf[50];
+#define MAX_ENCODER_VALUE 1024
+#define MIN_TIME 1  // 1 second
+#define MAX_TIME 300  // 5 minutes
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,6 +51,8 @@ I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim14;
 
 UART_HandleTypeDef huart3;
 
@@ -65,6 +71,8 @@ static void MX_I2C1_Init(void);
 static void MX_ADC3_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
+static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -81,7 +89,7 @@ static void MX_TIM3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	uint16_t LED_DutyCycle = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -108,8 +116,11 @@ int main(void)
   MX_ADC3_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_TIM4_Init();
+  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
+  HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
   DS1302_Init();
   HAL_Delay(1000);
   char tempBuffer[100];
@@ -122,10 +133,30 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
 	  DS1302_ReadTime(time);
 	  sprintf(tempBuffer,"\n\r %2d/%2d/%2d%2d:%2d:%2d \n\r",time[1],time[2],time[3],time[4],time[5],time[6]);
 	  HAL_UART_Transmit(&huart3, (uint8_t*)tempBuffer, strlen(tempBuffer), HAL_MAX_DELAY);
 	  HAL_Delay(1000);
+
+      LED_DutyCycle = TIM4->CNT; //65536/tic*64
+
+//      TIM14->CCR1 = LED_DutyCycle;
+
+      sprintf(uartBuf, "Encoder count: %d\r\n", (int)TIM4->CNT);
+      HAL_UART_Transmit(&huart3, (uint8_t*)uartBuf, strlen(uartBuf), HAL_MAX_DELAY);
+
+      HAL_Delay(10);
+
+      uint16_t encoderReading = TIM4->CNT;  // Original reading
+
+      // Scale the reading to a range of 1 second to 300 seconds
+      uint16_t scaledTime = MIN_TIME + ((encoderReading * (MAX_TIME - MIN_TIME)) / MAX_ENCODER_VALUE);
+
+      // Now scaledTime should be in the range of 1 second to 300 seconds
+      char buffer[20];
+      sprintf(buffer, "Scaled Time: %d seconds\n", scaledTime);
+      HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     /* USER CODE END WHILE */
 
@@ -422,6 +453,101 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 0;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 1024;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 0;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 65535;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim14, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+
+  /* USER CODE END TIM14_Init 2 */
+  HAL_TIM_MspPostInit(&htim14);
+
+}
+
+/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -565,11 +691,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PF4 PF6 PF7 PF8
-                           PF9 PF11 PF12 PF13
-                           PF14 PF15 */
+                           PF11 PF12 PF13 PF14
+                           PF15 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8
-                          |GPIO_PIN_9|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15;
+                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14
+                          |GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
@@ -637,14 +763,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PD10 PD11 PD12 PD13
-                           PD14 PD15 PD0 PD1
-                           PD2 PD3 PD4 PD5
-                           PD6 PD7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_1
-                          |GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_6|GPIO_PIN_7;
+  /*Configure GPIO pins : PD10 PD11 PD14 PD15
+                           PD0 PD1 PD2 PD3
+                           PD4 PD5 PD6 PD7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_14|GPIO_PIN_15
+                          |GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
+                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
