@@ -23,7 +23,9 @@
 /* USER CODE BEGIN Includes */
 #include "string.h"
 #include "DS1302.h"
+#include "ssd1306.h"
 #include "stdio.h"
+#include "ssd1306_fonts.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -119,6 +121,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
+  ssd1306_Init();
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
   DS1302_Init();
@@ -155,7 +158,19 @@ int main(void)
 
       // Now scaledTime should be in the range of 1 second to 300 seconds
       char buffer[20];
-      sprintf(buffer, "Scaled Time: %d seconds\n", scaledTime);
+      if((TIM4->CNT)>99)
+      {
+    	  ssd1306_Fill(Black);
+      }
+      if((TIM4->CNT)>9)
+            {
+          	  ssd1306_Fill(Black);
+            }
+      sprintf(buffer, "Time for ADC: %ds\n", scaledTime);
+      ssd1306_SetCursor(0,0); // Adjust these values according to where you want the text to start
+      ssd1306_WriteString(buffer, Font_7x10, White); // Replace with your font and color choice
+      ssd1306_UpdateScreen();
+
       HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     /* USER CODE END WHILE */
