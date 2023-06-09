@@ -81,7 +81,76 @@ static void MX_TIM14_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void ADC_CH0_SELECT()
+{
+	  ADC_ChannelConfTypeDef sConfig = {0};
+	  sConfig.Channel = ADC_CHANNEL_0;
+	  sConfig.Rank = ADC_REGULAR_RANK_1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+	  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+	  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+	  sConfig.Offset = 0;
+	  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
+void ADC_CH1_SELECT()
+{
+	  ADC_ChannelConfTypeDef sConfig = {0};
+	  sConfig.Channel = ADC_CHANNEL_1;
+	  sConfig.Rank = ADC_REGULAR_RANK_1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+	  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+	  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+	  sConfig.Offset = 0;
+	  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
+void ADC_CH4_SELECT()
+{
+	  ADC_ChannelConfTypeDef sConfig = {0};
+	  sConfig.Channel = ADC_CHANNEL_4;
+	  sConfig.Rank = ADC_REGULAR_RANK_1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+	  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+	  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+	  sConfig.Offset = 0;
+	  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
+void ADC_CH5_SELECT()
+{
+	  ADC_ChannelConfTypeDef sConfig = {0};
+	  sConfig.Channel = ADC_CHANNEL_5;
+	  sConfig.Rank = ADC_REGULAR_RANK_1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+	  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+	  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+	  sConfig.Offset = 0;
+	  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
+void ADC_CH6_SELECT()
+{
+	  ADC_ChannelConfTypeDef sConfig = {0};
+	  sConfig.Channel = ADC_CHANNEL_6;
+	  sConfig.Rank = ADC_REGULAR_RANK_1;
+	  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
+	  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+	  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+	  sConfig.Offset = 0;
+	  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -126,6 +195,25 @@ int main(void)
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
   DS1302_Init();
   HAL_Delay(1000);
+  uint32_t adcraw0=0;
+  uint32_t adcraw1=0;
+  uint32_t adcraw4=0;
+  uint32_t adcraw5=0;
+  uint32_t adcraw6=0;
+
+  uint32_t adcarray0[100];
+  uint32_t adcarray1[100];
+  uint32_t adcarray4[100];
+  uint32_t adcarray5[100];
+  uint32_t adcarray6[100];
+
+  int counterAdc=0;
+
+  char adcbuffer0[50];
+  char adcbuffer1[50];
+  char adcbuffer4[50];
+  char adcbuffer5[50];
+  char adcbuffer6[50];
   char tempBuffer[100];
   char time[8];
   char time_to_set[8]={0,5,06,23,01,54,00,1};//Contr,Year,Mounth,Date,Hour,Min,Sec,Day
@@ -172,6 +260,60 @@ int main(void)
       ssd1306_UpdateScreen();
 
       HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+      // ADC
+      ADC_CH0_SELECT();
+      HAL_ADC_Start(&hadc3);
+      HAL_ADC_PollForConversion(&hadc3, 100);
+      adcraw0 = HAL_ADC_GetValue(&hadc3);
+      adcarray0[counterAdc]=adcraw0;
+      HAL_ADC_Stop(&hadc3);
+
+      ADC_CH1_SELECT();
+      HAL_ADC_Start(&hadc3);
+      HAL_ADC_PollForConversion(&hadc3, 100);
+      adcraw1 = HAL_ADC_GetValue(&hadc3);
+      adcarray1[counterAdc]=adcraw0;
+      HAL_ADC_Stop(&hadc3);
+
+      ADC_CH4_SELECT();
+      HAL_ADC_Start(&hadc3);
+      HAL_ADC_PollForConversion(&hadc3, 100);
+      adcraw4 = HAL_ADC_GetValue(&hadc3);
+      adcarray4[counterAdc]=adcraw0;
+      HAL_ADC_Stop(&hadc3);
+
+      ADC_CH5_SELECT();
+      HAL_ADC_Start(&hadc3);
+      HAL_ADC_PollForConversion(&hadc3, 100);
+      adcraw5 = HAL_ADC_GetValue(&hadc3);
+      adcarray5[counterAdc]=adcraw0;
+      HAL_ADC_Stop(&hadc3);
+
+      ADC_CH6_SELECT();
+      HAL_ADC_Start(&hadc3);
+      HAL_ADC_PollForConversion(&hadc3, 100);
+      adcraw6 = HAL_ADC_GetValue(&hadc3);
+      adcarray6[counterAdc]=adcraw0;
+      HAL_ADC_Stop(&hadc3);
+
+
+      counterAdc++;
+
+      if(counterAdc>100)
+      {
+    	  counterAdc=0;
+      }
+	  sprintf(adcbuffer0,"\n\r %lu \n\r",adcraw0);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer0, strlen(adcbuffer0), HAL_MAX_DELAY);
+	  sprintf(adcbuffer1,"\n\r %2d \n\r",adcraw1);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer1, strlen(adcbuffer1), HAL_MAX_DELAY);
+	  sprintf(adcbuffer4,"\n\r %2d \n\r",adcraw4);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer4, strlen(adcbuffer4), HAL_MAX_DELAY);
+	  sprintf(adcbuffer5,"\n\r %2d \n\r",adcraw5);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer5, strlen(adcbuffer5), HAL_MAX_DELAY);
+	  sprintf(adcbuffer6,"\n\r %2d \n\r",adcraw6);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer6, strlen(adcbuffer6), HAL_MAX_DELAY);
 
     /* USER CODE END WHILE */
 
@@ -263,16 +405,16 @@ static void MX_ADC3_Init(void)
   hadc3.Instance = ADC3;
   hadc3.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV6;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc3.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc3.Init.LowPowerAutoWait = DISABLE;
   hadc3.Init.ContinuousConvMode = ENABLE;
-  hadc3.Init.NbrOfConversion = 5;
+  hadc3.Init.NbrOfConversion = 1;
   hadc3.Init.DiscontinuousConvMode = DISABLE;
   hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc3.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
-  hadc3.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc3.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
   hadc3.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
   hadc3.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc3) != HAL_OK)
@@ -283,42 +425,10 @@ static void MX_ADC3_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = ADC_REGULAR_RANK_2;
-  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_4;
-  sConfig.Rank = ADC_REGULAR_RANK_3;
-  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_5;
-  sConfig.Rank = ADC_REGULAR_RANK_4;
-  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_6;
-  sConfig.Rank = ADC_REGULAR_RANK_5;
   if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -536,7 +646,7 @@ static void MX_TIM14_Init(void)
   htim14.Instance = TIM14;
   htim14.Init.Prescaler = 0;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim14.Init.Period = 65535;
+  htim14.Init.Period = 1024;
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
