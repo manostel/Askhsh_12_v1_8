@@ -38,9 +38,9 @@
 #define MAX_ENCODER_VALUE 1024
 #define MIN_TIME 1  // 1 second
 #define MAX_TIME 300  // 5 minutes
-uint16_t setTiming1=1;
-uint16_t scaledTime;
-uint16_t encoderReading;
+uint32_t setTiming1=1;
+uint32_t scaledTime;
+uint32_t encoderReading;
 char uartBuf[50];
 int adcraw0=0;
 int adcraw1=0;
@@ -54,14 +54,14 @@ int adcarray4[100];
 int adcarray6[100];
 int adcarray7[100];
 
-int counter=0;
+uint32_t counter1=0;
 
 char datalogbuf0[50];
 char datalogbuf1[50];
 char datalogbuf4[50];
 char datalogbuf6[50];
 char datalogbuf7[50];
-int counterclk=0;
+uint32_t counterclk=0;
 
 char adcbuffer0[50];
 char adcbuffer1[50];
@@ -87,6 +87,7 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim14;
 
 UART_HandleTypeDef huart3;
@@ -103,6 +104,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
@@ -112,6 +114,7 @@ static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -120,21 +123,17 @@ static void MX_TIM14_Init(void);
 /* USER CODE BEGIN 0 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance == TIM3)
-		{
-			counterclk++;
-			if (counterclk==setTiming1)//    1tick=1000ms counter == 30    == 30sec   ara gia olo to 24h 86400
-				{
-				HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-				counterclk=0;
-				}
-				/*if (counter1>86400)//counter for 24 hours
-				{
-				flag1=1;
-				counter1=0;
-				}*/
-				//HAL_GPIO_TogglePin(GPIOB, LD3_Pin|LD2_Pin);
-		}
+  if (htim->Instance == TIM5)
+  {
+	  counterclk++;
+	  if(counterclk>setTiming1)
+	  {
+	  HAL_GPIO_TogglePin(LD3_GPIO_Port,LD3_Pin);
+	  counterclk=0;
+	  }
+    // Code to execute every 1 second interval
+    // Place your desired actions here
+  }
 }
 
 //void datalogger() ////5 lepta
@@ -265,6 +264,9 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
+/* Configure the peripherals common clocks */
+  PeriphCommonClock_Config();
+
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
@@ -279,13 +281,16 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM14_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   ssd1306_Init();
   HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim5);
+  HAL_NVIC_EnableIRQ(TIM3_IRQn);
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
   DS1302_Init();
-  HAL_Delay(1000);
+  HAL_Delay(200);
 
 
   DS1302_WriteTime(time_to_set);
@@ -295,13 +300,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  if(counter1>=20)
+	        {
+	      	  counter1=0;
+	        }
+	  counter1++;
 	  DS1302_ReadTime(time);
 	  sprintf(timeBuffer,"\n\r %2d/%2d/%2d%2d:%2d:%2d \n\r",time[1],time[2],time[3],time[4],time[5],time[6]);
-	  strcpy(TimeArray[counter], timeBuffer); // Copy the formatted time string to TimeArray
+	  strcpy(TimeArray[counter1], timeBuffer); // Copy the formatted time string to TimeArray
 
 	  HAL_UART_Transmit(&huart3, (uint8_t*)timeBuffer, strlen(timeBuffer), HAL_MAX_DELAY);
-	  HAL_Delay(1000);
+	  HAL_Delay(200);
 
 
 //      LED_DutyCycle = TIM4->CNT; //65536/tic*64
@@ -317,7 +326,7 @@ int main(void)
 
       // Scale the reading to a range of 1 second to 300 seconds
       scaledTime = MIN_TIME + ((encoderReading * (MAX_TIME - MIN_TIME)) / MAX_ENCODER_VALUE);
-      setTiming1=(scaledTime*100);
+      setTiming1=(scaledTime);
       // Now scaledTime should be in the range of 1 second to 300 seconds
       char buffer[20];
 
@@ -335,44 +344,41 @@ int main(void)
       HAL_ADC_Start(&hadc3);
       HAL_ADC_PollForConversion(&hadc3, 100);
       adcraw0 = HAL_ADC_GetValue(&hadc3);
-      adcarray0[counter]=adcraw0;
+      adcarray0[counter1]=adcraw0;
       HAL_ADC_Stop(&hadc3);
 
       ADC_CH1_SELECT();
       HAL_ADC_Start(&hadc3);
       HAL_ADC_PollForConversion(&hadc3, 100);
       adcraw1 = HAL_ADC_GetValue(&hadc3);
-      adcarray1[counter]=adcraw0;
+      adcarray1[counter1]=adcraw0;
       HAL_ADC_Stop(&hadc3);
 
       ADC_CH4_SELECT();
       HAL_ADC_Start(&hadc3);
       HAL_ADC_PollForConversion(&hadc3, 100);
       adcraw4 = HAL_ADC_GetValue(&hadc3);
-      adcarray4[counter]=adcraw0;
+      adcarray4[counter1]=adcraw0;
       HAL_ADC_Stop(&hadc3);
 
       ADC_CH6_SELECT();
       HAL_ADC_Start(&hadc3);
       HAL_ADC_PollForConversion(&hadc3, 100);
       adcraw6 = HAL_ADC_GetValue(&hadc3);
-      adcarray6[counter]=adcraw0;
+      adcarray6[counter1]=adcraw0;
       HAL_ADC_Stop(&hadc3);
 
       ADC_CH7_SELECT();
       HAL_ADC_Start(&hadc3);
       HAL_ADC_PollForConversion(&hadc3, 100);
       adcraw7 = HAL_ADC_GetValue(&hadc3);
-      adcarray7[counter]=adcraw0;
+      adcarray7[counter1]=adcraw0;
       HAL_ADC_Stop(&hadc3);
 
 
 
 
-      if(counter>100)
-      {
-    	  counter=0;
-      }
+
 	  sprintf(adcbuffer0,"\n\r %2d \n\r",adcraw0);
 	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer0, strlen(adcbuffer0), HAL_MAX_DELAY);
 	  sprintf(adcbuffer1,"\n\r %2d \n\r",adcraw1);
@@ -384,7 +390,7 @@ int main(void)
 	  sprintf(adcbuffer7,"\n\r %2d \n\r",adcraw7);
 	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer7, strlen(adcbuffer7), HAL_MAX_DELAY);
 
-	  counter++;
+
 
     /* USER CODE END WHILE */
 
@@ -411,14 +417,11 @@ void SystemClock_Config(void)
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
-  /** Macro to configure the PLL clock source
-  */
-  __HAL_RCC_PLL_PLLSOURCE_CONFIG(RCC_PLLSOURCE_CSI);
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_CSI|RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
+  RCC_OscInitStruct.HSIState = RCC_HSI_DIV2;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.CSIState = RCC_CSI_ON;
   RCC_OscInitStruct.CSICalibrationValue = RCC_CSICALIBRATION_DEFAULT;
@@ -441,7 +444,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
@@ -449,7 +452,25 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
   RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief Peripherals Common Clock Configuration
+  * @retval None
+  */
+void PeriphCommonClock_Config(void)
+{
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+
+  /** Initializes the peripherals clock
+  */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CKPER;
+  PeriphClkInitStruct.CkperClockSelection = RCC_CLKPSOURCE_HSI;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
@@ -613,19 +634,19 @@ static void MX_TIM3_Init(void)
 {
 
   /* USER CODE BEGIN TIM3_Init 0 */
-
+//
   /* USER CODE END TIM3_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM3_Init 1 */
-
+//
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 75.5-1;
+  htim3.Init.Prescaler = 64000-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 10000;
+  htim3.Init.Period = 2000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -644,7 +665,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+//
   /* USER CODE END TIM3_Init 2 */
 
 }
@@ -695,6 +716,51 @@ static void MX_TIM4_Init(void)
   /* USER CODE BEGIN TIM4_Init 2 */
 
   /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = (SystemCoreClock/1000)-1;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 10000-1;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
 
 }
 
@@ -1004,6 +1070,14 @@ static void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+    char buffer[20];
+
+    ssd1306_Fill(Black);
+
+    sprintf(buffer, "gGMTXMMMMMMMMMMMM\n");
+    ssd1306_SetCursor(0,0); // Adjust these values according to where you want the text to start
+    ssd1306_WriteString(buffer, Font_7x10, White); // Replace with your font and color choice
+    ssd1306_UpdateScreen();
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
