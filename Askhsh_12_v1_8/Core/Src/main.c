@@ -51,6 +51,7 @@
 #define GAP_WIDTH 18
 #define BAR_WIDTH 5 // Width of the bars. Adjust as desired.
 #define ELEVATION 10
+#define EEPROM_ADDRESS 0x50 // Device address of 24C64
 
 int adc_flag=0;
 int uartflag=0;
@@ -145,6 +146,38 @@ static void MX_TIM5_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+
+//extern I2C_HandleTypeDef hi2c1;  // Assuming you have hi2c1 as your I2C handle
+//
+//void I2C_ScanBus(void)
+//{
+//    char msg[64];  // Message buffer
+//
+//    sprintf(msg, "Scanning I2C bus:\r\n");
+//    HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+//
+//    HAL_StatusTypeDef res;
+//    for(uint16_t i = 0; i < 128; i++)
+//    {
+//        res = HAL_I2C_IsDeviceReady(&hi2c1, i << 1, 1, 10000);
+//        if(res == HAL_OK)
+//        {
+//            sprintf(msg, "0x%02X\r\n", i);  // Device found
+//            HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+//        }
+//        else
+//        {
+//            sprintf(msg, ".");  // No device found
+//            HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+//        }
+//    }
+//
+//    sprintf(msg, "Scan completed\r\n");
+//    HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+//}
+
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Instance == TIM5)
@@ -367,7 +400,14 @@ void uarttrigger()
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer6, strlen(adcbuffer6), HAL_MAX_DELAY);
 	sprintf(adcbuffer7,"\n\r Channel 7  %2d \n\r",adcraw7);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer7, strlen(adcbuffer7), HAL_MAX_DELAY);
+	for (uint16_t i = 0; i < 10; i++) {
+	    EEPROM_Read(i, 0, (uint8_t*)&adcarray0[i], sizeof(int));
 
+	    // Print the value using UART3
+	    char uartBuffer[20];
+	    sprintf(uartBuffer, "Value at index %d: %d\r\n", i, adcarray0[i]);
+	    HAL_UART_Transmit(&huart3, (uint8_t*)uartBuffer, strlen(uartBuffer), HAL_MAX_DELAY);
+	}
 	HAL_Delay(10);
 
 }
@@ -382,17 +422,24 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
+
   /* MCU Configuration--------------------------------------------------------*/
+
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
   /* USER CODE BEGIN Init */
   /* USER CODE END Init */
+
   /* Configure the system clock */
   SystemClock_Config();
+
 /* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
+
   /* USER CODE BEGIN SysInit */
   /* USER CODE END SysInit */
+
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART3_UART_Init();
@@ -429,6 +476,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  I2C_ScanBus();
+	  if(HAL_GPIO_ReadPin(EEPROM_BUTTON_GPIO_Port, EEPROM_BUTTON_Pin)==0)
+	  {
+		  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,SET);
+		  for (uint16_t i = 0; i < 10; i++) {
+		      EEPROM_Write(i, 0, (uint8_t*)&adcarray0[i], sizeof(int));
+		  	ssd1306_Fill(Black);
+
+		  	ssd1306_SetCursor(0, 0); // Position the cursor for the first line
+		  	ssd1306_WriteString("EEPROM ", Font_11x18, White);
+		  	ssd1306_SetCursor(0, 20); // Position the cursor for the first line
+		  	ssd1306_WriteString("WRITE ", Font_11x18, White);
+		  	ssd1306_UpdateScreen();
+		  	HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,RESET);
+		  }
+		  HAL_Delay(500);
+	  }
 	  ssd1306_Fill(Black);
 	  if(uartflag==1)
 	  {
@@ -549,7 +613,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLQ = 3;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOMEDIUM;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -762,7 +826,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 64000-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 2000-1;
+  htim3.Init.Period = 10000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -854,7 +918,7 @@ static void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 1 */
   htim5.Instance = TIM5;
-  htim5.Init.Prescaler = (SystemCoreClock/1000)-1;
+  htim5.Init.Prescaler = 64000-1;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim5.Init.Period = 1000-1;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -1041,11 +1105,11 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : PE2 PE3 PE4 PE5
                            PE6 PE7 PE8 PE9
                            PE10 PE11 PE12 PE13
-                           PE14 PE15 PE0 PE1 */
+                           PE14 PE15 PE1 */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
                           |GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9
                           |GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_1;
+                          |GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -1099,20 +1163,20 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PA0 PA1 PA2 PA3
                            PA4 PA5 PA6 PA7
-                           PA15 */
+                           PA13 PA14 PA15 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
                           |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7
-                          |GPIO_PIN_15;
+                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB0 PB1 PB2 PB10
-                           PB11 PB12 PB15 PB4
-                           PB5 PB6 */
+                           PB11 PB12 PB15 PB3
+                           PB4 PB5 PB6 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10
-                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_15|GPIO_PIN_4
-                          |GPIO_PIN_5|GPIO_PIN_6;
+                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_15|GPIO_PIN_3
+                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -1172,6 +1236,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : EEPROM_BUTTON_Pin */
+  GPIO_InitStruct.Pin = EEPROM_BUTTON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(EEPROM_BUTTON_GPIO_Port, &GPIO_InitStruct);
 
 }
 
