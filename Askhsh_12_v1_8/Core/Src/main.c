@@ -38,10 +38,17 @@
 #define MAX_ENCODER_VALUE 1024
 #define MIN_TIME 1  // 1 second
 #define MAX_TIME 300  // 5 minutes
+#define MAX_TIME_EVENTS 100
+int adc_flag=0;
+int uartflag=0;
+int i=0;
 uint32_t setTiming1=1;
 uint32_t scaledTime;
 uint32_t encoderReading;
 char uartBuf[50];
+char buffer[20];
+char graphbuffer[100];
+char graphTimeBuffer[100];
 int adcraw0=0;
 int adcraw1=0;
 int adcraw4=0;
@@ -55,12 +62,14 @@ int adcarray6[100];
 int adcarray7[100];
 
 uint32_t counter1=0;
+uint32_t counter2=0;
 
-char datalogbuf0[50];
-char datalogbuf1[50];
-char datalogbuf4[50];
-char datalogbuf6[50];
-char datalogbuf7[50];
+
+char datalogbuf0[100];
+char datalogbuf1[100];
+char datalogbuf4[100];
+char datalogbuf6[100];
+char datalogbuf7[100];
 uint32_t counterclk=0;
 
 char adcbuffer0[50];
@@ -69,9 +78,11 @@ char adcbuffer4[50];
 char adcbuffer6[50];
 char adcbuffer7[50];
 char time[8];
-char time_to_set[8]={0,5,06,23,01,54,00,1};//Contr,Year,Mounth,Date,Hour,Min,Sec,Day
+char time_to_set[8]={0,23,6,11,16,14,00,1};//Contr,Year,Mounth,Date,Hour,Min,Sec,Day
 char timeBuffer[100];
-char TimeArray[100][100];
+char timeBuffer2[100];
+char TimeArray[100];  // Array to store time events
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -126,44 +137,67 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM5)
   {
 	  counterclk++;
-	  if(counterclk>setTiming1)
+	  counter2++;
+	  adc_flag=0;
+	  uartflag=0;
+	  if(counterclk>=setTiming1)
 	  {
-	  HAL_GPIO_TogglePin(LD3_GPIO_Port,LD3_Pin);
+//	  dataloggerflag=1;
+
+	  adc_flag=1;
 	  counterclk=0;
+	  }
+	  if(counter2>=5)
+	  {
+		  uartflag=1;
+		  counter2=0;
 	  }
     // Code to execute every 1 second interval
     // Place your desired actions here
   }
 }
 
-//void datalogger() ////5 lepta
-//{
-//
-//
-//
-//	if(HAL_GPIO_ReadPin(GPIOC, USER_Btn_Pin)==1)
-//	{
-//	for (i=0; i<100; i++) // 10 gia test  288 gia 5 lepta gia na bgalw ola ta apothikeumena apo to datalogger_array na ta metatrepsw kai na ta dw sto hyper terminal
-//	{
-//
-//	char buffer2[50];
-//	ssd1306_Fill(Black);
-//    sprintf(buffer2, "DATA LOGGER\n SENDING TO PuTTy\n");
-//    ssd1306_SetCursor(0,0); // Adjust these values according to where you want the text to start
-//    ssd1306_WriteString(buffer2, Font_7x10, White); // Replace with your font and color choice
-//    ssd1306_UpdateScreen();
-//    sprintf(datalogbuf0, "%d\t%.2f %c\n\r", i,adcarray0[i], datalogger_array_status[i]);
-//    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf0, strlen(datalogbuf0), 100);
-//
-////    sprintf(datalogbuf2, " %c\n\r", datalogger_array_status[i]);
-////    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf2, strlen(datalogbuf2), 100);
-//	}
-//	TM_HD44780_Clear();
-//
-//	}
-//
-//	tempCharStore=='D';
-//}
+void datalogger() ////5 lepta
+{
+
+
+	HAL_Delay(500);
+	if(HAL_GPIO_ReadPin(GPIOC, USER_Btn_Pin)==1)
+	{
+	for (i=0; i<100; i++) // 10 gia test  288 gia 5 lepta gia na bgalw ola ta apothikeumena apo to datalogger_array na ta metatrepsw kai na ta dw sto hyper terminal
+	{
+
+	char buffer2[50];
+	ssd1306_Fill(Black);
+    sprintf(buffer2, "DATA LOGGER SENDING TO PuTTy");
+    ssd1306_SetCursor(0,20); // Adjust these values according to where you want the text to start
+    ssd1306_WriteString(buffer2, Font_7x10, White); // Replace with your font and color choice
+    ssd1306_UpdateScreen();
+    sprintf(graphbuffer, "\n\r~~~~~~~~~~~~~~DATALOGGER~~~~~~~~~~~~~~~~\n\r");
+    HAL_UART_Transmit(&huart3, (uint8_t*)graphbuffer, strlen(graphbuffer), 100);
+    sprintf(graphTimeBuffer, "\n\r~~~~~~~~~~~~~~%s~~~~~~~~~~~~~~~~\n\r",TimeArray[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t*)graphTimeBuffer, strlen(graphTimeBuffer), 100);
+    sprintf(datalogbuf0, "\n\r%d Channel 0  %2d\n\r", i,adcarray0[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf0, strlen(datalogbuf0), 100);
+    sprintf(datalogbuf1, "\n\r   Channel 1  %2d\n\r", adcarray1[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf1, strlen(datalogbuf1), 100);
+    sprintf(datalogbuf4, "\n\r   Channel 4  %2d\n\r", adcarray4[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf4, strlen(datalogbuf4), 100);
+    sprintf(datalogbuf6, "\n\r   Channel 6  %2d\n\r", adcarray6[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf6, strlen(datalogbuf6), 100);
+    sprintf(datalogbuf7, "\n\r   Channel 7  %2d\n\r", adcarray7[i]);
+    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf7, strlen(datalogbuf7), 100);
+
+
+//    sprintf(datalogbuf2, " %c\n\r", datalogger_array_status[i]);
+//    HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf2, strlen(datalogbuf2), 100);
+	}
+	ssd1306_Fill(Black);
+
+	}
+
+
+}
 
 
 
@@ -239,6 +273,82 @@ void ADC_CH7_SELECT()
 	  }
 }
 
+void ADC_TAKE_ALL()
+{
+
+
+	HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,SET);
+	DS1302_ReadTime(time);
+	sprintf(timeBuffer2,"\n\r %2d/%2d/%2d %2d:%2d:%2d \n\r",time[1],time[2],time[3],time[4],time[5],time[6]);
+	strcpy(TimeArray[counter1], timeBuffer2);
+    HAL_Delay(10);
+    ADC_CH0_SELECT();
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, 100);
+    adcraw0 = HAL_ADC_GetValue(&hadc3);
+    adcarray0[counter1]=adcraw0;
+    HAL_ADC_Stop(&hadc3);
+    HAL_Delay(10);
+    ADC_CH1_SELECT();
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, 100);
+    adcraw1 = HAL_ADC_GetValue(&hadc3);
+    adcarray1[counter1]=adcraw1;
+    HAL_ADC_Stop(&hadc3);
+    HAL_Delay(10);
+    ADC_CH4_SELECT();
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, 100);
+    adcraw4 = HAL_ADC_GetValue(&hadc3);
+    adcarray4[counter1]=adcraw4;
+    HAL_ADC_Stop(&hadc3);
+    HAL_Delay(10);
+    ADC_CH6_SELECT();
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, 100);
+    adcraw6 = HAL_ADC_GetValue(&hadc3);
+    adcarray6[counter1]=adcraw6;
+    HAL_ADC_Stop(&hadc3);
+    HAL_Delay(10);
+    ADC_CH7_SELECT();
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, 100);
+    adcraw7 = HAL_ADC_GetValue(&hadc3);
+    adcarray7[counter1]=adcraw7;
+    HAL_ADC_Stop(&hadc3);
+    HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,RESET);
+
+    counter1++;
+    adc_flag=0;
+}
+
+void uarttrigger()
+{
+	DS1302_ReadTime(time);
+	sprintf(timeBuffer,"\n\r %2d/%2d/%2d %2d:%2d:%2d \n\r",time[1],time[2],time[3],time[4],time[5],time[6]);
+
+
+	HAL_UART_Transmit(&huart3, (uint8_t*)timeBuffer, strlen(timeBuffer), HAL_MAX_DELAY);
+
+	sprintf(uartBuf, "Encoder count: %d\r\n", (int)TIM4->CNT);
+	HAL_UART_Transmit(&huart3, (uint8_t*)uartBuf, strlen(uartBuf), HAL_MAX_DELAY);
+    sprintf(buffer, "SetTime ADC:%ds\n", scaledTime);
+	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+	sprintf(adcbuffer0,"\n\r %2d \n\r",adcraw0);
+	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer0, strlen(adcbuffer0), HAL_MAX_DELAY);
+	sprintf(adcbuffer1,"\n\r %2d \n\r",adcraw1);
+	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer1, strlen(adcbuffer1), HAL_MAX_DELAY);
+	sprintf(adcbuffer4,"\n\r %2d \n\r",adcraw4);
+	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer4, strlen(adcbuffer4), HAL_MAX_DELAY);
+	sprintf(adcbuffer6,"\n\r %2d \n\r",adcraw6);
+	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer6, strlen(adcbuffer6), HAL_MAX_DELAY);
+	sprintf(adcbuffer7,"\n\r %2d \n\r",adcraw7);
+	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer7, strlen(adcbuffer7), HAL_MAX_DELAY);
+
+	HAL_Delay(10);
+
+}
 
 /* USER CODE END 0 */
 
@@ -249,28 +359,18 @@ void ADC_CH7_SELECT()
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
-
   /* MCU Configuration--------------------------------------------------------*/
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
 /* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
-
   /* USER CODE BEGIN SysInit */
-
   /* USER CODE END SysInit */
-
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART3_UART_Init();
@@ -291,106 +391,47 @@ int main(void)
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
   DS1302_Init();
   HAL_Delay(200);
-
-
-  DS1302_WriteTime(time_to_set);
+ // DS1302_WriteTime(time_to_set);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(counter1>=20)
-	        {
-	      	  counter1=0;
-	        }
-	  counter1++;
-	  DS1302_ReadTime(time);
-	  sprintf(timeBuffer,"\n\r %2d/%2d/%2d%2d:%2d:%2d \n\r",time[1],time[2],time[3],time[4],time[5],time[6]);
-	  strcpy(TimeArray[counter1], timeBuffer); // Copy the formatted time string to TimeArray
-
-	  HAL_UART_Transmit(&huart3, (uint8_t*)timeBuffer, strlen(timeBuffer), HAL_MAX_DELAY);
-	  HAL_Delay(200);
-
-
-//      LED_DutyCycle = TIM4->CNT; //65536/tic*64
-
-//      TIM14->CCR1 = LED_DutyCycle;
-
-      sprintf(uartBuf, "Encoder count: %d\r\n", (int)TIM4->CNT);
-      HAL_UART_Transmit(&huart3, (uint8_t*)uartBuf, strlen(uartBuf), HAL_MAX_DELAY);
-
-      HAL_Delay(10);
-
+	  if(uartflag==1)
+	  {
+		  uarttrigger();
+		  uartflag=0;
+	  }
       encoderReading = TIM4->CNT;  // Original reading
-
       // Scale the reading to a range of 1 second to 300 seconds
       scaledTime = MIN_TIME + ((encoderReading * (MAX_TIME - MIN_TIME)) / MAX_ENCODER_VALUE);
       setTiming1=(scaledTime);
       // Now scaledTime should be in the range of 1 second to 300 seconds
-      char buffer[20];
-
-      ssd1306_Fill(Black);
-
       sprintf(buffer, "SetTime ADC:%ds\n", scaledTime);
+      ssd1306_Fill(Black);
       ssd1306_SetCursor(0,0); // Adjust these values according to where you want the text to start
       ssd1306_WriteString(buffer, Font_7x10, White); // Replace with your font and color choice
       ssd1306_UpdateScreen();
 
-      HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+      // take all the adc measurements
+      if(counter1>99)
+      {
+    	  counter1=0;
+      }
 
-      // ADC
-      ADC_CH0_SELECT();
-      HAL_ADC_Start(&hadc3);
-      HAL_ADC_PollForConversion(&hadc3, 100);
-      adcraw0 = HAL_ADC_GetValue(&hadc3);
-      adcarray0[counter1]=adcraw0;
-      HAL_ADC_Stop(&hadc3);
+      if(adc_flag==1)
+      {
 
-      ADC_CH1_SELECT();
-      HAL_ADC_Start(&hadc3);
-      HAL_ADC_PollForConversion(&hadc3, 100);
-      adcraw1 = HAL_ADC_GetValue(&hadc3);
-      adcarray1[counter1]=adcraw0;
-      HAL_ADC_Stop(&hadc3);
+    	  ADC_TAKE_ALL();
+    	  adc_flag=0;
 
-      ADC_CH4_SELECT();
-      HAL_ADC_Start(&hadc3);
-      HAL_ADC_PollForConversion(&hadc3, 100);
-      adcraw4 = HAL_ADC_GetValue(&hadc3);
-      adcarray4[counter1]=adcraw0;
-      HAL_ADC_Stop(&hadc3);
+      }
 
-      ADC_CH6_SELECT();
-      HAL_ADC_Start(&hadc3);
-      HAL_ADC_PollForConversion(&hadc3, 100);
-      adcraw6 = HAL_ADC_GetValue(&hadc3);
-      adcarray6[counter1]=adcraw0;
-      HAL_ADC_Stop(&hadc3);
-
-      ADC_CH7_SELECT();
-      HAL_ADC_Start(&hadc3);
-      HAL_ADC_PollForConversion(&hadc3, 100);
-      adcraw7 = HAL_ADC_GetValue(&hadc3);
-      adcarray7[counter1]=adcraw0;
-      HAL_ADC_Stop(&hadc3);
-
-
-
-
-
-	  sprintf(adcbuffer0,"\n\r %2d \n\r",adcraw0);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer0, strlen(adcbuffer0), HAL_MAX_DELAY);
-	  sprintf(adcbuffer1,"\n\r %2d \n\r",adcraw1);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer1, strlen(adcbuffer1), HAL_MAX_DELAY);
-	  sprintf(adcbuffer4,"\n\r %2d \n\r",adcraw4);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer4, strlen(adcbuffer4), HAL_MAX_DELAY);
-	  sprintf(adcbuffer6,"\n\r %2d \n\r",adcraw6);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer6, strlen(adcbuffer6), HAL_MAX_DELAY);
-	  sprintf(adcbuffer7,"\n\r %2d \n\r",adcraw7);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer7, strlen(adcbuffer7), HAL_MAX_DELAY);
-
-
+      if(HAL_GPIO_ReadPin(GPIOC, USER_Btn_Pin)==1)
+      {
+    	  datalogger();
+      }
 
     /* USER CODE END WHILE */
 
@@ -740,7 +781,7 @@ static void MX_TIM5_Init(void)
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = (SystemCoreClock/1000)-1;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 10000-1;
+  htim5.Init.Period = 1000-1;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
