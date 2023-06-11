@@ -81,7 +81,7 @@ char time[8];
 char time_to_set[8]={0,23,6,11,16,14,00,1};//Contr,Year,Mounth,Date,Hour,Min,Sec,Day
 char timeBuffer[100];
 char timeBuffer2[100];
-char TimeArray[100];  // Array to store time events
+char TimeArray[100][50];  // Array to store time events
 
 /* USER CODE END PD */
 
@@ -278,9 +278,11 @@ void ADC_TAKE_ALL()
 
 
 	HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,SET);
+
 	DS1302_ReadTime(time);
 	sprintf(timeBuffer2,"\n\r %2d/%2d/%2d %2d:%2d:%2d \n\r",time[1],time[2],time[3],time[4],time[5],time[6]);
 	strcpy(TimeArray[counter1], timeBuffer2);
+
     HAL_Delay(10);
     ADC_CH0_SELECT();
     HAL_ADC_Start(&hadc3);
@@ -335,15 +337,15 @@ void uarttrigger()
     sprintf(buffer, "SetTime ADC:%ds\n", scaledTime);
 	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-	sprintf(adcbuffer0,"\n\r %2d \n\r",adcraw0);
+	sprintf(adcbuffer0,"\n\r Channel 0  %2d \n\r",adcraw0);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer0, strlen(adcbuffer0), HAL_MAX_DELAY);
-	sprintf(adcbuffer1,"\n\r %2d \n\r",adcraw1);
+	sprintf(adcbuffer1,"\n\r Channel 1  %2d \n\r",adcraw1);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer1, strlen(adcbuffer1), HAL_MAX_DELAY);
-	sprintf(adcbuffer4,"\n\r %2d \n\r",adcraw4);
+	sprintf(adcbuffer4,"\n\r Channel 4  %2d \n\r",adcraw4);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer4, strlen(adcbuffer4), HAL_MAX_DELAY);
-	sprintf(adcbuffer6,"\n\r %2d \n\r",adcraw6);
+	sprintf(adcbuffer6,"\n\r Channel 6  %2d \n\r",adcraw6);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer6, strlen(adcbuffer6), HAL_MAX_DELAY);
-	sprintf(adcbuffer7,"\n\r %2d \n\r",adcraw7);
+	sprintf(adcbuffer7,"\n\r Channel 7  %2d \n\r",adcraw7);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer7, strlen(adcbuffer7), HAL_MAX_DELAY);
 
 	HAL_Delay(10);
