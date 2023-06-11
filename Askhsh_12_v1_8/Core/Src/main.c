@@ -35,10 +35,23 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_ENCODER_VALUE 1024
+
 #define MIN_TIME 1  // 1 second
 #define MAX_TIME 300  // 5 minutes
-#define MAX_TIME_EVENTS 100
+#define MAX_ENCODER_VALUE 1024
+#define TIME_STEP 10  // 10 seconds per detent
+#define TOTAL_DETENTS ((MAX_TIME - MIN_TIME) / TIME_STEP)  // total number of detents
+#define ENCODER_STEP (MAX_ENCODER_VALUE / TOTAL_DETENTS)
+#define ADC_MAX 4095
+#define DISPLAY_WIDTH 128
+#define DISPLAY_HEIGHT 64
+#define NUM_CHANNELS 5
+#define START_X 20
+#define START_Y 10
+#define GAP_WIDTH 18
+#define BAR_WIDTH 5 // Width of the bars. Adjust as desired.
+#define ELEVATION 10
+
 int adc_flag=0;
 int uartflag=0;
 int i=0;
@@ -406,14 +419,31 @@ int main(void)
 		  uartflag=0;
 	  }
       encoderReading = TIM4->CNT;  // Original reading
+      int detents = encoderReading / ENCODER_STEP;
+      scaledTime = MIN_TIME + (detents * TIME_STEP);
+      if (scaledTime > MAX_TIME) {
+          scaledTime = MIN_TIME;
+      }
+      if (scaledTime > MIN_TIME) {
+          scaledTime = scaledTime-MIN_TIME;
+      }
+      if((encoderReading>1018)&&(encoderReading<=1024))
+      {
+    	  scaledTime=300;
+      }
       // Scale the reading to a range of 1 second to 300 seconds
-      scaledTime = MIN_TIME + ((encoderReading * (MAX_TIME - MIN_TIME)) / MAX_ENCODER_VALUE);
+      // Scale the reading to a range of MIN_TIME to MAX_TIME
+
+
+      // Round to the nearest multiple of 10
+
+
       setTiming1=(scaledTime);
       // Now scaledTime should be in the range of 1 second to 300 seconds
       sprintf(buffer, "SetTime ADC:%ds\n", scaledTime);
       ssd1306_Fill(Black);
-      ssd1306_SetCursor(0,0); // Adjust these values according to where you want the text to start
-      ssd1306_WriteString(buffer, Font_7x10, White); // Replace with your font and color choice
+      ssd1306_SetCursor(13,56); // Adjust these values according to where you want the text to start
+      ssd1306_WriteString(buffer, Font_6x8, White); // Replace with your font and color choice
       ssd1306_UpdateScreen();
 
       // take all the adc measurements
@@ -429,6 +459,32 @@ int main(void)
     	  adc_flag=0;
 
       }
+      int barHeight1 = ((adcraw0 * (DISPLAY_HEIGHT - START_Y-ELEVATION)) / ADC_MAX);
+      int barHeight2 = ((adcraw1 * (DISPLAY_HEIGHT - START_Y-ELEVATION)) / ADC_MAX);
+      int barHeight3 = ((adcraw4 * (DISPLAY_HEIGHT - START_Y-ELEVATION)) / ADC_MAX);
+      int barHeight4 = ((adcraw6 * (DISPLAY_HEIGHT - START_Y-ELEVATION)) / ADC_MAX);
+      int barHeight5 = ((adcraw7 * (DISPLAY_HEIGHT - START_Y-ELEVATION)) / ADC_MAX);
+
+      // Draw a filled rectangle for each bar
+      ssd1306_DrawFilledRectangle(START_X + (0 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - barHeight1-ELEVATION, BAR_WIDTH, barHeight1, White);
+      ssd1306_DrawFilledRectangle(START_X + (1 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - barHeight2-ELEVATION, BAR_WIDTH, barHeight2, White);
+      ssd1306_DrawFilledRectangle(START_X + (2 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - barHeight3-ELEVATION, BAR_WIDTH, barHeight3, White);
+      ssd1306_DrawFilledRectangle(START_X + (3 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - barHeight4-ELEVATION, BAR_WIDTH, barHeight4, White);
+      ssd1306_DrawFilledRectangle(START_X + (4 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - barHeight5-ELEVATION, BAR_WIDTH, barHeight5, White);
+
+      // Label for each bar
+      ssd1306_SetCursor(START_X + (0 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight1 - 8);  // Assumes a font height
+      ssd1306_WriteString("0", Font_6x8, White);  // Replace with your font
+      ssd1306_SetCursor(START_X + (1 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight2 - 8);  // Assumes a font height
+      ssd1306_WriteString("1", Font_6x8, White);  // Replace with your font
+      ssd1306_SetCursor(START_X + (2 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight3 - 8);  // Assumes a font height
+      ssd1306_WriteString("4", Font_6x8, White);  // Replace with your font
+      ssd1306_SetCursor(START_X + (3 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight4 - 8);  // Assumes a font height
+      ssd1306_WriteString("6", Font_6x8, White);  // Replace with your font
+      ssd1306_SetCursor(START_X + (4 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight5 - 8);  // Assumes a font height
+      ssd1306_WriteString("7", Font_6x8, White);  // Replace with your font
+
+      ssd1306_UpdateScreen();
 
       if(HAL_GPIO_ReadPin(GPIOC, USER_Btn_Pin)==1)
       {
