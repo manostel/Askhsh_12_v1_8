@@ -400,7 +400,7 @@ void uarttrigger()
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer6, strlen(adcbuffer6), HAL_MAX_DELAY);
 	sprintf(adcbuffer7,"\n\r Channel 7  %2d \n\r",adcraw7);
 	HAL_UART_Transmit(&huart3, (uint8_t*)adcbuffer7, strlen(adcbuffer7), HAL_MAX_DELAY);
-	for (uint16_t i = 0; i < 10; i++) {
+	for (uint16_t i = 0; i < 100; i++) {
 	    EEPROM_Read(i, 0, (uint8_t*)&adcarray0[i], sizeof(int));
 
 	    // Print the value using UART3
@@ -480,7 +480,7 @@ int main(void)
 	  if(HAL_GPIO_ReadPin(EEPROM_BUTTON_GPIO_Port, EEPROM_BUTTON_Pin)==0)
 	  {
 		  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,SET);
-		  for (uint16_t i = 0; i < 10; i++) {
+		  for (uint16_t i = 0; i < 100; i++) {
 		      EEPROM_Write(i, 0, (uint8_t*)&adcarray0[i], sizeof(int));
 		  	ssd1306_Fill(Black);
 

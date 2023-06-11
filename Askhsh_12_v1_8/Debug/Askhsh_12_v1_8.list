@@ -2457,7 +2457,7 @@ void uarttrigger()
  800143c:	4930      	ldr	r1, [pc, #192]	; (8001500 <uarttrigger+0x210>)
  800143e:	481b      	ldr	r0, [pc, #108]	; (80014ac <uarttrigger+0x1bc>)
  8001440:	f009 fa2c 	bl	800a89c <HAL_UART_Transmit>
-	for (uint16_t i = 0; i < 10; i++) {
+	for (uint16_t i = 0; i < 100; i++) {
  8001444:	2300      	movs	r3, #0
  8001446:	82fb      	strh	r3, [r7, #22]
  8001448:	e020      	b.n	800148c <uarttrigger+0x19c>
@@ -2491,12 +2491,12 @@ void uarttrigger()
  800147c:	f04f 33ff 	mov.w	r3, #4294967295
  8001480:	480a      	ldr	r0, [pc, #40]	; (80014ac <uarttrigger+0x1bc>)
  8001482:	f009 fa0b 	bl	800a89c <HAL_UART_Transmit>
-	for (uint16_t i = 0; i < 10; i++) {
+	for (uint16_t i = 0; i < 100; i++) {
  8001486:	8afb      	ldrh	r3, [r7, #22]
  8001488:	3301      	adds	r3, #1
  800148a:	82fb      	strh	r3, [r7, #22]
  800148c:	8afb      	ldrh	r3, [r7, #22]
- 800148e:	2b09      	cmp	r3, #9
+ 800148e:	2b63      	cmp	r3, #99	; 0x63
  8001490:	d9db      	bls.n	800144a <uarttrigger+0x15a>
 	}
 	HAL_Delay(10);
@@ -2662,7 +2662,7 @@ int main(void)
  80015c0:	2180      	movs	r1, #128	; 0x80
  80015c2:	480b      	ldr	r0, [pc, #44]	; (80015f0 <main+0xe4>)
  80015c4:	f003 fc8c 	bl	8004ee0 <HAL_GPIO_WritePin>
-		  for (uint16_t i = 0; i < 10; i++) {
+		  for (uint16_t i = 0; i < 100; i++) {
  80015c8:	2300      	movs	r3, #0
  80015ca:	83fb      	strh	r3, [r7, #30]
  80015cc:	e03c      	b.n	8001648 <main+0x13c>
@@ -2716,12 +2716,12 @@ int main(void)
  800163a:	2180      	movs	r1, #128	; 0x80
  800163c:	4897      	ldr	r0, [pc, #604]	; (800189c <main+0x390>)
  800163e:	f003 fc4f 	bl	8004ee0 <HAL_GPIO_WritePin>
-		  for (uint16_t i = 0; i < 10; i++) {
+		  for (uint16_t i = 0; i < 100; i++) {
  8001642:	8bfb      	ldrh	r3, [r7, #30]
  8001644:	3301      	adds	r3, #1
  8001646:	83fb      	strh	r3, [r7, #30]
  8001648:	8bfb      	ldrh	r3, [r7, #30]
- 800164a:	2b09      	cmp	r3, #9
+ 800164a:	2b63      	cmp	r3, #99	; 0x63
  800164c:	d9d2      	bls.n	80015f4 <main+0xe8>
 		  }
 		  HAL_Delay(500);
