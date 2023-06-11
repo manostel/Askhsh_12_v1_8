@@ -182,13 +182,20 @@ void datalogger() ////5 lepta
 
 	char buffer2[50];
 	ssd1306_Fill(Black);
-    sprintf(buffer2, "DATA LOGGER SENDING TO PuTTy");
-    ssd1306_SetCursor(0,20); // Adjust these values according to where you want the text to start
-    ssd1306_WriteString(buffer2, Font_7x10, White); // Replace with your font and color choice
-    ssd1306_UpdateScreen();
+
+	ssd1306_SetCursor(0, 0); // Position the cursor for the first line
+	ssd1306_WriteString("DATA LOGGER", Font_11x18, White);
+
+	ssd1306_SetCursor(0, 20); // Position the cursor for the second line. Adjust the y-coordinate as needed based on your font size.
+	ssd1306_WriteString("SENDING", Font_11x18, White);
+
+	ssd1306_SetCursor(0, 40); // Position the cursor for the second line. Adjust the y-coordinate as needed based on your font size.
+	ssd1306_WriteString("TO PuTTY", Font_11x18, White);
+
+	ssd1306_UpdateScreen();
     sprintf(graphbuffer, "\n\r~~~~~~~~~~~~~~DATALOGGER~~~~~~~~~~~~~~~~\n\r");
     HAL_UART_Transmit(&huart3, (uint8_t*)graphbuffer, strlen(graphbuffer), 100);
-    sprintf(graphTimeBuffer, "\n\r~~~~~~~~~~~~~~%s~~~~~~~~~~~~~~~~\n\r",TimeArray[i]);
+    sprintf(graphTimeBuffer, "\n\r~~~~~~~~~~~~~~%s~~~~~~~~~~~~~~\n\r",TimeArray[i]);
     HAL_UART_Transmit(&huart3, (uint8_t*)graphTimeBuffer, strlen(graphTimeBuffer), 100);
     sprintf(datalogbuf0, "\n\r%d Channel 0  %2d\n\r", i,adcarray0[i]);
     HAL_UART_Transmit(&huart3, (uint8_t*)datalogbuf0, strlen(datalogbuf0), 100);
@@ -406,6 +413,15 @@ int main(void)
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
   DS1302_Init();
   HAL_Delay(200);
+	ssd1306_Fill(Black);
+
+	ssd1306_SetCursor(0, 5); // Position the cursor for the first line
+	ssd1306_WriteString("Teletos", Font_16x26, White);
+
+	ssd1306_SetCursor(0, 35); // Position the cursor for the first line
+	ssd1306_WriteString("Embedded", Font_16x26, White);
+	ssd1306_UpdateScreen();
+	 HAL_Delay(2000);
  // DS1302_WriteTime(time_to_set);
   /* USER CODE END 2 */
 
@@ -413,6 +429,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  ssd1306_Fill(Black);
 	  if(uartflag==1)
 	  {
 		  uarttrigger();
@@ -441,10 +458,10 @@ int main(void)
       setTiming1=(scaledTime);
       // Now scaledTime should be in the range of 1 second to 300 seconds
       sprintf(buffer, "SetTime ADC:%ds\n", scaledTime);
-      ssd1306_Fill(Black);
+
       ssd1306_SetCursor(13,56); // Adjust these values according to where you want the text to start
       ssd1306_WriteString(buffer, Font_6x8, White); // Replace with your font and color choice
-      ssd1306_UpdateScreen();
+
 
       // take all the adc measurements
       if(counter1>99)
@@ -473,15 +490,15 @@ int main(void)
       ssd1306_DrawFilledRectangle(START_X + (4 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - barHeight5-ELEVATION, BAR_WIDTH, barHeight5, White);
 
       // Label for each bar
-      ssd1306_SetCursor(START_X + (0 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight1 - 8);  // Assumes a font height
+      ssd1306_SetCursor(START_X + (0 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION-45- 8);  // Assumes a font height
       ssd1306_WriteString("0", Font_6x8, White);  // Replace with your font
-      ssd1306_SetCursor(START_X + (1 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight2 - 8);  // Assumes a font height
+      ssd1306_SetCursor(START_X + (1 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION-45- 8);  // Assumes a font height
       ssd1306_WriteString("1", Font_6x8, White);  // Replace with your font
-      ssd1306_SetCursor(START_X + (2 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight3 - 8);  // Assumes a font height
+      ssd1306_SetCursor(START_X + (2 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION-45- 8);  // Assumes a font height
       ssd1306_WriteString("4", Font_6x8, White);  // Replace with your font
-      ssd1306_SetCursor(START_X + (3 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight4 - 8);  // Assumes a font height
+      ssd1306_SetCursor(START_X + (3 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION-45- 8);  // Assumes a font height
       ssd1306_WriteString("6", Font_6x8, White);  // Replace with your font
-      ssd1306_SetCursor(START_X + (4 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION - barHeight5 - 8);  // Assumes a font height
+      ssd1306_SetCursor(START_X + (4 * (BAR_WIDTH + GAP_WIDTH)), DISPLAY_HEIGHT - ELEVATION-45- 8);  // Assumes a font height
       ssd1306_WriteString("7", Font_6x8, White);  // Replace with your font
 
       ssd1306_UpdateScreen();
