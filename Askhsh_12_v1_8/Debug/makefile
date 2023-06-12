@@ -60,8 +60,8 @@ all: main-build
 main-build: Askhsh_12_v1_8.elf secondary-outputs
 
 # Tool invocations
-Askhsh_12_v1_8.elf: $(OBJS) $(USER_OBJS) D:\Downloads\Askhsh_12_v1_8\Askhsh_12_v1_8\STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Askhsh_12_v1_8.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"D:\Downloads\Askhsh_12_v1_8\Askhsh_12_v1_8\STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Askhsh_12_v1_8.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Askhsh_12_v1_8.elf: $(OBJS) $(USER_OBJS) D:\Downloads\Askhsh_12_v1_8-main\Askhsh_12_v1_8-main\Askhsh_12_v1_8\STM32H743ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Askhsh_12_v1_8.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"D:\Downloads\Askhsh_12_v1_8-main\Askhsh_12_v1_8-main\Askhsh_12_v1_8\STM32H743ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Askhsh_12_v1_8.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
